@@ -13,3 +13,8 @@ dependencies = [
     "scipy>=1.10.1",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.txt"]

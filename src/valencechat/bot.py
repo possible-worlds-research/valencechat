@@ -35,6 +35,7 @@ class Chat:
         return verbalisation, counterfactual, explanation
 
     def get_q(self, frame, qud=None):
+        #print("Getting question for",frame, qud)
         if qud:
             templates = [t for t in self.higher_frames[frame] if t[0] == qud]
         else:
@@ -77,17 +78,18 @@ class Chat:
                 elif explanation == 1:
                     frame = 'explanation'
                 else:
-                    frame = 'class'
-                qud, attribute = self.get_q(frame, qud=qud)
+                    frame = 'class' # Shouldn't do this. Either stop or find a way to ask other counterfactuals/explanations.
             else:
                 frame = 'class'
+            if frame == 'class':
                 qud, attribute = self.get_q(frame)
+            else:
+                qud, attribute = self.get_q(frame, qud=qud)
             goal = f"{frame}:{qud}"
-            if qud:
-                question, counterfactual, explanation = self.get_verbalisation(concept, goal, attribute=attribute)
-                self.pop_goal(frame, qud, attribute)
-                write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
-                user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
+            question, counterfactual, explanation = self.get_verbalisation(concept, goal, attribute=attribute)
+            self.pop_goal(frame, qud, attribute)
+            write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
+            user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
             if frame != 'class' and self.check_finish():
                 write_to_dir(f"HUM >> {goal.upper()}: {user_input}", self.data_dir, self.session_id)
                 goal = 'convention:thankyou'
