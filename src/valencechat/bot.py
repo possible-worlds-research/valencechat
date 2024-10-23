@@ -7,8 +7,9 @@ from os.path import join
 from pathlib import Path
 from datetime import datetime
 from random import shuffle, randint
-from valencechat.loaders import load_verbalisations, make_higher_frames
+from valencechat.loaders import load_verbalisations
 from valencechat.logger import write_to_dir
+from valencechat.framing import Frame
 
 class Chat:
   
@@ -16,10 +17,15 @@ class Chat:
         self.lang = lang
         self.session_id = session_id
         self.verbalisations = load_verbalisations(self.lang)
-        self.higher_frames = make_higher_frames(self.verbalisations)
+        self.frames = []
+        self.current_frame = None
         self.data_dir = join(getcwd(),join('data',self.lang))
         Path(self.data_dir).mkdir(exist_ok=True, parents=True)
 
+    def add_frame(self, frame):
+        self.frames.append(frame)
+        self.current_frame = len(self.frames) - 1
+        return self.frames[self.current_frame]
 
     def get_verbalisation(self, x, goal, attribute=None):
         #print("Getting verbalisation for",goal)
@@ -34,69 +40,36 @@ class Chat:
         explanation = template[2]
         return verbalisation, counterfactual, explanation
 
-    def get_q(self, frame, qud=None):
-        #print("Getting question for",frame, qud)
-        if qud:
-            templates = [t for t in self.higher_frames[frame] if t[0] == qud]
-        else:
-            templates = self.higher_frames[frame]
-        if len(templates) > 0:
-            shuffle(templates)
-            qud, attribute = templates[0]
-            return qud, attribute
-        return None, None
-
-    def pop_goal(self, frame, goal, attribute):
-        if attribute:
-            self.higher_frames[frame].remove((goal, attribute))
-        else:
-            self.higher_frames[frame].remove((goal, None))
-
-    def check_finish(self):
-        if len(self.higher_frames['class']) == 0:
-            return True
-        return False
+    def get_goal(self):
+        frame = self.frames[self.current_frame]
+        goal = frame.sample_core_unfilled()
+        if not goal:
+            next_step, material = frame.explore_from_frame()
+            if next_step == 'sampled_non_core':
+                goal = material
+            elif next_step == 'new_context':
+                curr = self.add_frame(material)
+                goal = curr.sample_core_unfilled()
+            elif next_step == 'new_belief_holder':
+                goal = 'branchout:beliefholder'
+        return goal
 
     def converse(self, concept):
         write_to_dir(f"CONCEPT: {concept}", self.data_dir, self.session_id)
-        frame = 'class'
-        qud= 'definition' #question under discussion
-        goal = f"{frame}:{qud}"
-        attribute = None
+        frame = Frame(name=concept)
+        curr = self.add_frame(frame)
+        goal = self.get_goal()
         question, counterfactual, explanation = self.get_verbalisation(concept, goal)
-        self.pop_goal(frame, qud, attribute)
         write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
         user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
 
         while user_input != 'q':
             write_to_dir(f"HUM >> {goal.upper()}: {user_input}", self.data_dir, self.session_id)
-            if frame == 'class':
-                if counterfactual == 1 and explanation == 1:
-                    frame = ['counterfact', 'explanation'][randint(0,1)]
-                elif counterfactual == 1:
-                    frame = 'counterfact'
-                elif explanation == 1:
-                    frame = 'explanation'
-                else:
-                    frame = 'class' # Shouldn't do this. Either stop or find a way to ask other counterfactuals/explanations.
-            else:
-                frame = 'class'
-            if frame == 'class':
-                qud, attribute = self.get_q(frame)
-            else:
-                qud, attribute = self.get_q(frame, qud=qud)
-            goal = f"{frame}:{qud}"
-            question, counterfactual, explanation = self.get_verbalisation(concept, goal, attribute=attribute)
-            self.pop_goal(frame, qud, attribute)
+            frame.fill(goal, user_input)
+            goal = self.get_goal()
+            question, counterfactual, explanation = self.get_verbalisation(concept, goal)
             write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
             user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
-            if frame != 'class' and self.check_finish():
-                write_to_dir(f"HUM >> {goal.upper()}: {user_input}", self.data_dir, self.session_id)
-                goal = 'convention:thankyou'
-                utterance, _, _ = self.get_verbalisation(concept, goal)
-                write_to_dir(f"BOT >> {goal.upper()}: {utterance}", self.data_dir, self.session_id)
-                print(f"BOT >> {utterance}")
-                break
 
 
 if __name__ == '__main__':

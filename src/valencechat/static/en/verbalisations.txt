@@ -3,20 +3,20 @@
 #######################
 
 # Defining
-<class:definition>| What is <x>?|0|0
-<class:definition>| Can you define <x>?|0|0
+<definition:surface_form>| What is <x>?|0|0
+<definition:surface_form>| Can you define <x>?|0|0
+<definition:explanation>| Can you explain your definition of <x>?|0|0
+<definition:counterfactuals>| Are there other definitions of <x>?|0|0
 
 # Valence
-<class:valence>| On a scale of 1 to 7, how good is <x>? (1 is very bad, 7 is very good.)|1|1
+<valence:score>| On a scale of 1 to 7, how good is <x>? (1 is very bad, 7 is very good.)|1|1
 
 # Prevalence
-<class:prevalence>| How often do you encounter <x> in the world?|1|1
+<prevalence:score>| How often do you encounter <x> in the world?|1|1
 
 # Instantiation
-<class:instantiation>| Give me an example of <x>.|0|0
+<instances>| Give me an example of <x>.|0|0
 
-# Belief-holder
-<class:beliefholder>| How would you describe your relation to <x>?|1|0
 
 
 #################
@@ -24,19 +24,16 @@
 #################
 
 # Prevalence
-<counterfact:prevalence:more>| Are there contexts where <x> is more common?|0|0
-<counterfact:prevalence:less>| Are there contexts where <x> is less common?|0|0
-<counterfact:prevalence:more>| Are there factors that make <x> more common?|0|0
-<counterfact:prevalence:less>| Are there factors that make <x> less common?|0|0
+<prevalence:counterfactuals:more>| Are there contexts where <x> is more common?|0|0
+<prevalence:counterfactuals:less>| Are there contexts where <x> is less common?|0|0
+<prevalence:counterfactuals:more>| Are there factors that make <x> more common?|0|0
+<prevalence:counterfactuals:less>| Are there factors that make <x> less common?|0|0
 
 # Valence
-<counterfact:valence:better>| Are there contexts that make <x> a positive thing?|0|0
-<counterfact:valence:worse>| Are there contexts that make <x> a bad thing?|0|0
-<counterfact:valence:goodfor>| Are there people or things who may see <x> as a positive thing?|0|0
-<counterfact:valence:badfor>| Are there people or things who may see <x> as a bad thing?|0|0
-
-# Belief-holder
-<counterfact:beliefholder>| Can you think of anybody who would see <x> differently from you?|0|1
+<valence:counterfactuals:better>| Are there contexts that make <x> a positive thing?|0|0
+<valence:counterfactuals:worse>| Are there contexts that make <x> a bad thing?|0|0
+<valence:counterfactuals:goodfor>| Are there people or things who may see <x> as a positive thing?|0|0
+<valence:counterfactuals:badfor>| Are there people or things who may see <x> as a bad thing?|0|0
 
 
 ##############
@@ -44,15 +41,16 @@
 ##############
 
 # Prevalence
-<explanation:prevalence>| Are there statistics for this?|0|0
+<prevalence:explanation>| Are there statistics to confirm how frequent <x> is?|0|0
 
 # Valence
-<explanation:valence>| How would you justify this?|0|0
-<explanation:valence>| Why is that so?|0|0
+<valence:explanation>| How would you justify whether <x> is positive or negative?|0|0
 
-# Sources
-<explanation:beliefholder:yes>| Why the different view?|0|0
-<explanation:beliefholder:no>| Really not?|0|0
+############
+# Branch out
+############
+
+<branchout:beliefholder>| Would anybody see <x> differently?|0|0
 
 
 ####################
@@ -63,11 +61,3 @@
 <analysis:valence:lower>| Shouldn't there be less <x>, then?|0|0
 <analysis:valence:greater>| Shouldn't there more less <x>, then?|0|0
 
-
-#############
-# Conventions
-#############
-
-# Thanks
-<convention:thankyou>|Many thanks. I don't have any further questions.|0|0
-<convention:thankyou>|Thank you for your time. Those were all my questions.|0|0

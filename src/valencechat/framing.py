@@ -1,14 +1,16 @@
+from random import shuffle
 import numpy as np
-
 
 class Frame:
   
-    def __init__(self):
+    def __init__(self, name=None, belief_holder=None):
         '''
         A frame contains important information about some concept X.
         A concept can be something very generic ('cat', 'freedom')
         of very ad hoc ('the way people stand in front of other 
         people's bookshelves'). But it includes the following:
+        - The belief holder for the frame.
+        - A name for X.
         - A definition for X.
         - A valence score (is X good or bad?)
         - A prevalence score (is X frequent or rare?)
@@ -19,9 +21,12 @@ class Frame:
         In addition, for definition, valence and prevalence, some 
         explanation and counterfactuals can be provided.
 
-        The minimal script indicates which information must have been
-        acquired for the frame to be considered minimally filled.
+        The core script indicates which information must have been
+        acquired for the frame to be considered corely filled.
         '''
+
+        self.belief_holder = belief_holder
+        self.name = name
 
         # Definition for the concept, cases where the definition might not apply,
         # why this is a good definition.
@@ -38,30 +43,92 @@ class Frame:
         # why this is a good definition.
         self.prevalence = {'score':0.0, 'explanation':'', 'counterfactuals':[]}
 
-        # This is a little hacky. Show the variables that should be filled in the
-        # minimal script, and their defaults.
-        self.minimal_script = [
-                (self.definition['surface_form'],''),
-                (self.instances,[]),
-                (self.valence['score'], 0.0),
-                (self.prevalence['score'], 0.0),
+        # Labels for each slot in the frame
+        self.labels = {
+                'definition:surface_form': self.definition['surface_form'],
+                'definition:explanation': self.definition['explanation'],
+                'definition:counterfactuals': self.definition['counterfactuals'],
+                'instances': self.instances,
+                'valence:score': self.valence['score'],
+                'valence:explanation': self.valence['explanation'],
+                'valence:counterfactuals': self.valence['counterfactuals'],
+                'prevalence:score': self.prevalence['score'],
+                'prevalence:explanation': self.prevalence['explanation'],
+                'prevalence:counterfactuals': self.prevalence['counterfactuals'],
+                }
+                
+
+        # Show the variables that should be filled in the core script.
+        self.core_script = [
+                'definition:surface_form',
+                'instances',
+                'valence:score',
+                'prevalence:score',
                 ]
 
+        # Placeholder to hold the list of filled frame elements.
+        self.filled = []
 
-    def check_minimal_script_filled(self):
-        minimal_okay = True
-        for condition in self.minimal_script:
-            if condition[0] == condition[1]:
-                minimal_okay = False
-        return minimal_okay
+    def fill(self, label, value):
+        if label != 'instances' and not label.endswith('counterfactuals'):
+            self.labels[label] = value
+        else:
+            self.labels[label].append(value)
+        self.filled.append(label)
 
-
-    def get_unfilled(self):
+    def explore_from_frame(self):
         '''
-        Return frame elements that are currently
-        unfilled.
+        Engage in exploration from this frame. This could be by filling in some 
+        non-essential slot of the current frame, or by branching out
+        to some new context or belief holder.
         '''
-        print("Checking unfilled frame elements")
+        non_core = self.sample_non_core_unfilled()
+        if non_core:
+            return 'sampled_non_core', non_core
+        
+        context = self.pick_new_context()
+        if context:
+            new_frame = Frame(name=context, belief_holder=self.belief_holder)
+            return 'new_context', new_frame
+
+        new_frame = Frame(name=self.name, belief_holder=None)
+        return 'new_belief_holder', new_frame
+
+    def pick_new_context(self):
+        '''
+        This picks a context of interest to build a new frame.
+        'Context' here could refer to a particular instance, or
+        to a counterfactual context.
+        '''
+        contexts = []
+        contexts.extend(self.instances)
+        contexts.extend(self.valence['counterfactuals'])
+        contexts.extend(self.prevalence['counterfactuals'])
+        shuffle(contexts)
+        context = f"{self.name}:{contexts[0]}"
+        return context
+
+    def sample_core_unfilled(self):
+        '''
+        Sample from frame elements from core script that are 
+        currently unfilled.
+        '''
+        core_unfilled = list(set(self.core_script) - set(self.filled) )
+        if len(core_unfilled) > 0:
+            shuffle(core_unfilled)
+            return core_unfilled[0]
+        return None
+
+    def sample_non_core_unfilled(self):
+        '''
+        Sample from frame elements from non-core elements that are 
+        currently unfilled.
+        '''
+        unfilled = list(set(self.labels.keys()) - set(self.filled))
+        if len(unfilled) > 0:
+            shuffle(unfilled)
+            return unfilled[0]
+        return None
 
 
 class Space:
