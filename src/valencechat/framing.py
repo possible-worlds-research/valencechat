@@ -1,5 +1,6 @@
 from random import shuffle
 import numpy as np
+import json
 
 class Frame:
   
@@ -105,6 +106,7 @@ class Frame:
         contexts.extend(self.valence['counterfactuals'])
         contexts.extend(self.prevalence['counterfactuals'])
         shuffle(contexts)
+        print("CONTEXTS",contexts)
         context = f"{self.name}:{contexts[0]}"
         return context
 
@@ -130,6 +132,8 @@ class Frame:
             return unfilled[0]
         return None
 
+    def jsonify(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4) 
 
 class Space:
     '''

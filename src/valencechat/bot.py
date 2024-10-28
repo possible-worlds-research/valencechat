@@ -25,12 +25,14 @@ class Chat:
     def add_frame(self, frame):
         self.frames.append(frame)
         self.current_frame = len(self.frames) - 1
-        return self.frames[self.current_frame]
 
     def get_verbalisation(self, x, goal, attribute=None):
         #print("Getting verbalisation for",goal)
         if not attribute:
-            templates = self.verbalisations[f'<{goal}>']
+            keys = [v for v in list(self.verbalisations.keys()) if v.startswith(f'<{goal}')]
+            templates = []
+            for k in keys:
+                templates.extend(self.verbalisations[k])
         else:
             templates = self.verbalisations[f'<{goal}:{attribute}>']
         shuffle(templates)
@@ -46,28 +48,41 @@ class Chat:
         if not goal:
             next_step, material = frame.explore_from_frame()
             if next_step == 'sampled_non_core':
+                print("Sampling non core.")
                 goal = material
             elif next_step == 'new_context':
-                curr = self.add_frame(material)
-                goal = curr.sample_core_unfilled()
+                print("Sampling new context.")
+                self.add_frame(material)
+                goal = self.frames[self.current_frame].sample_core_unfilled()
             elif next_step == 'new_belief_holder':
+                print("Sampling new belief holder.")
                 goal = 'branchout:beliefholder'
+        print("NEW GOAL", goal)
         return goal
+
+    def get_question(self):
+        goal = self.get_goal()
+        curr = self.current_frame
+        concept = self.frames[curr].name
+        question, _, _ = self.get_verbalisation(concept, goal)
+        return goal, question
+
+    def memorise_answer(self, goal, answer):
+        self.frames[self.current_frame].fill(goal, answer)
+        print(self.frames[self.current_frame].jsonify())
 
     def converse(self, concept):
         write_to_dir(f"CONCEPT: {concept}", self.data_dir, self.session_id)
         frame = Frame(name=concept)
-        curr = self.add_frame(frame)
-        goal = self.get_goal()
-        question, counterfactual, explanation = self.get_verbalisation(concept, goal)
+        self.add_frame(frame)
+        goal, question = self.get_question()
         write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
         user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
 
         while user_input != 'q':
             write_to_dir(f"HUM >> {goal.upper()}: {user_input}", self.data_dir, self.session_id)
-            frame.fill(goal, user_input)
-            goal = self.get_goal()
-            question, counterfactual, explanation = self.get_verbalisation(concept, goal)
+            self.memorise_answer(goal, user_input)
+            goal, question = self.get_question()
             write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
             user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
 
