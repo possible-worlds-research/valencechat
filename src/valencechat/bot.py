@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import datetime
 from random import shuffle, randint
 from valencechat.loaders import load_verbalisations
+from valencechat.parsers import parse_verbalisations
 from valencechat.logger import write_to_dir
 from valencechat.framing import Frame
 
@@ -26,54 +27,80 @@ class Chat:
         self.frames.append(frame)
         self.current_frame = len(self.frames) - 1
 
-    def get_verbalisation(self, x, goal, attribute=None):
+    def get_frame_by_name(self, name):
+        curr = None
+        frame = None
+        for i,f in enumerate(self.frames):
+            if f.name == name:
+                curr = i
+                frame = f
+                break
+        return curr, frame
+
+    def get_verbalisation(self, goal, args, individual=False, attribute=None):
         #print("Getting verbalisation for",goal)
-        if not attribute:
-            keys = [v for v in list(self.verbalisations.keys()) if v.startswith(f'<{goal}')]
-            templates = []
-            for k in keys:
-                templates.extend(self.verbalisations[k])
-        else:
-            templates = self.verbalisations[f'<{goal}:{attribute}>']
-        shuffle(templates)
-        template = templates[0]
-        verbalisation = template[0].replace('<x>', x)
-        counterfactual = template[1]
-        explanation = template[2]
-        return verbalisation, counterfactual, explanation
+        verbalisation = None
+        arity = len(list(filter(None, args)))
+        templates = parse_verbalisations(self.verbalisations, goal, arity, individual, attribute)
+        if len(templates) > 0:
+            shuffle(templates)
+            template = templates[0]
+            # For the minute, accept up to three arguments
+            args = {'<x>': args[0], '<y>': args[1], '<z>': args[2]}
+            for var, val in args.items():
+                if val:
+                    template = template.replace(var, val)
+            verbalisation = template
+        return verbalisation
 
     def get_goal(self):
         frame = self.frames[self.current_frame]
         goal = frame.sample_core_unfilled()
+        print("Sampled core:",goal)
         if not goal:
             next_step, material = frame.explore_from_frame()
             if next_step == 'sampled_non_core':
-                print("Sampling non core.")
                 goal = material
+                print("Sampled non core:",goal)
             elif next_step == 'new_context':
-                print("Sampling new context.")
                 self.add_frame(material)
                 goal = self.frames[self.current_frame].sample_core_unfilled()
+                print("Sampled new context:", goal)
             elif next_step == 'new_belief_holder':
-                print("Sampling new belief holder.")
+                #print("Sampling new belief holder.")
                 goal = 'branchout:beliefholder'
-        print("NEW GOAL", goal)
         return goal
 
     def get_question(self):
-        goal = self.get_goal()
-        curr = self.current_frame
-        concept = self.frames[curr].name
-        question, _, _ = self.get_verbalisation(concept, goal)
+        c = 0
+        goal = None
+        question = None
+        while c < 10 and not question: 
+            goal = self.get_goal()
+            curr = self.current_frame
+            concept = self.frames[curr].name
+            print("Attempting to ask about",concept)
+            # For the minute, accept up to three arguments
+            args = [None, None, None]
+            splits = concept.split(':')
+            splits = splits[:min(len(splits),3)]
+            for i,el in enumerate(splits):
+                args[i] = el
+            args = args[:3]
+            individual = self.frames[curr].individual
+            question = self.get_verbalisation(goal, args, individual=individual)
+            c+=1
         return goal, question
 
-    def memorise_answer(self, goal, answer):
+    def memorise_answer(self, goal, answer, verbose=False):
+        print("Filling goal",self.frames[self.current_frame].name, goal)
         self.frames[self.current_frame].fill(goal, answer)
-        print(self.frames[self.current_frame].jsonify())
+        if verbose:
+            print(self.frames[self.current_frame].jsonify())
 
-    def converse(self, concept):
+    def converse(self, concept, individual=False):
         write_to_dir(f"CONCEPT: {concept}", self.data_dir, self.session_id)
-        frame = Frame(name=concept)
+        frame = Frame(name=concept, individual=individual)
         self.add_frame(frame)
         goal, question = self.get_question()
         write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
@@ -83,6 +110,9 @@ class Chat:
             write_to_dir(f"HUM >> {goal.upper()}: {user_input}", self.data_dir, self.session_id)
             self.memorise_answer(goal, user_input)
             goal, question = self.get_question()
+            if not question:
+                print("BOT >> Thank you very much.")
+                break
             write_to_dir(f"BOT >> {goal.upper()}: {question}", self.data_dir, self.session_id)
             user_input = input(f"BOT >> {question}\nHUM >> ").rstrip('\n')
 

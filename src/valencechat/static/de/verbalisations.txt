@@ -1,0 +1,72 @@
+#######################
+# Ontological questions
+#######################
+
+# Defining
+<concept:definition:surface_form>| Kannst du <x> genau definieren?
+<concept:definition:surface_form>| Kannst du den Begriff <x> erklären?
+<concept:definition:explanation>| Kannst du erklären, warum du <x> so definierst?
+<concept:definition:counterfactuals>| Gäbe es andere Definitionen von <x>?
+
+<individual:definition:surface_form>| Wer ist denn <x>?
+<individual:definition:surface_form>| Sag mir, wer <x> ist.
+
+# Valence
+<concept:valence:score>| Wie gut für die Welt ist <x>?
+<individual:valence:score>| Wie gut findet <x> <y>?
+
+# Prevalence
+<concept:prevalence:score>| Wie oft trifft man <x> in der Welt?
+<concept:prevalence:score>| Wie oft passiert <x>?
+<individual:prevalence:score>| Wie oft findet man <x> mit <y>?
+
+# Instantiation
+<concept:instances>| Gib mir ein Beispiel von <x>.
+<individual:instances>| Erzähle mir etwas, das <x> in ihrem Leben getan hat.
+<individual:instances>| Ich möchte von einer Sache hören, die <x> jeden Tag macht. Wie ist ihre Routine?
+<individual:instances>| Beschreibe einen Kontext, wo es <x> und <y> gibt. 
+
+
+
+#################
+# Counterfactuals
+#################
+
+# Prevalence
+<concept:prevalence:counterfactuals:more>| Gibt es Kontexte, wo <x> öfter vorkommt?
+<concept:prevalence:counterfactuals:less>| Gibt es Kontexte, wo <x> seltener vorkommt?
+<concept:prevalence:counterfactuals:more>| Gibt es Faktoren, die die Chance erhöhen, <x> zu haben?
+<concept:prevalence:counterfactuals:less>| Gibt es Faktoren, die <x> selteren machen?
+
+# Valence
+<concept:valence:counterfactuals:better>| Gibt es Kontexte, wo <x> eine Positive Sache ist?
+<concept:valence:counterfactuals:worse>| Gibt es Kontexte, wo <x> eine negative Sache ist?
+<concept:valence:counterfactuals:goodfor>| Gibt es Leute oder Sachen, für die <x> gut ist?
+<concept:valence:counterfactuals:badfor>| Gibt es Leute oder Sachen, für die <x> schlecht ist?
+
+
+##############
+# Explanations
+##############
+
+# Prevalence
+<concept:prevalence:explanation>| Gibt es irgendwelche Statistik, die zeigt, wie verbreitet <x> eigentlich ist?
+
+# Valence
+<concept:valence:explanation>| Wie würdest du beweisen, dass <x> genau so positiv oder negativ ist, wie du meinst?
+
+############
+# Branch out
+############
+
+<concept:branchout:beliefholder>| Würde jemand anders <x> sehr unterschiedlich betrachten?
+
+
+####################
+# Analysis questions
+####################
+
+# Hypotheses
+<concept:analysis:valence:lower>| Sollte es dann weniger von <x> geben?
+<concept:analysis:valence:greater>| Sollte es dann mehr von <x> geben?
+

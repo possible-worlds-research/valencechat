@@ -4,7 +4,7 @@ import json
 
 class Frame:
   
-    def __init__(self, name=None, belief_holder=None):
+    def __init__(self, name=None, belief_holder=None, individual=False):
         '''
         A frame contains important information about some concept X.
         A concept can be something very generic ('cat', 'freedom')
@@ -28,6 +28,7 @@ class Frame:
 
         self.belief_holder = belief_holder
         self.name = name
+        self.individual = individual
 
         # Definition for the concept, cases where the definition might not apply,
         # why this is a good definition.
@@ -60,12 +61,17 @@ class Frame:
                 
 
         # Show the variables that should be filled in the core script.
-        self.core_script = [
-                'definition:surface_form',
-                'instances',
-                'valence:score',
-                'prevalence:score',
-                ]
+        # By default, individuals do not have valence and prevalence.
+        self.core_script = ['definition:surface_form', 'instances']
+        if not self.individual:
+            self.core_script.extend(['valence:score', 'prevalence:score'])
+
+        # Show the variables that should remain unfilled in the core script.
+        # By default, individuals have most labels blocked.
+        self.blocked = []
+        if self.individual:
+            blocked = list(set(self.labels.keys()) - set(self.core_script))
+            self.blocked.extend(blocked)
 
         # Placeholder to hold the list of filled frame elements.
         self.filled = []
@@ -83,16 +89,27 @@ class Frame:
         non-essential slot of the current frame, or by branching out
         to some new context or belief holder.
         '''
+        print("Trying to sample non core unfilled.")
         non_core = self.sample_non_core_unfilled()
         if non_core:
             return 'sampled_non_core', non_core
         
+        print("Trying to sample new context.")
         context = self.pick_new_context()
         if context:
-            new_frame = Frame(name=context, belief_holder=self.belief_holder)
+            # We assume the new frame is about the same ontological type as the parent (individual or concept)
+            # This is perhaps a bit of a stretch...?
+            new_frame = Frame(name=context, belief_holder=self.belief_holder, individual=self.individual)
+
+            # Contexts are not particularly easily 'defined'
+            new_frame.core_script.remove('definition:surface_form')
+
+            # Redefine blocked list is not needed anymore, as the number of arguments will select for the right verbalisations.
+            del new_frame.blocked[:]
             return 'new_context', new_frame
 
-        new_frame = Frame(name=self.name, belief_holder=None)
+        print("Trying to sample new belief holder")
+        new_frame = Frame(name=self.name, belief_holder=None, individual=self.individual)
         return 'new_belief_holder', new_frame
 
     def pick_new_context(self):
@@ -106,7 +123,7 @@ class Frame:
         contexts.extend(self.valence['counterfactuals'])
         contexts.extend(self.prevalence['counterfactuals'])
         shuffle(contexts)
-        print("CONTEXTS",contexts)
+        print("Possible new contexts",contexts)
         context = f"{self.name}:{contexts[0]}"
         return context
 
@@ -115,7 +132,7 @@ class Frame:
         Sample from frame elements from core script that are 
         currently unfilled.
         '''
-        core_unfilled = list(set(self.core_script) - set(self.filled) )
+        core_unfilled = list(set(self.core_script) - set(self.filled) - set(self.blocked))
         if len(core_unfilled) > 0:
             shuffle(core_unfilled)
             return core_unfilled[0]
@@ -126,7 +143,7 @@ class Frame:
         Sample from frame elements from non-core elements that are 
         currently unfilled.
         '''
-        unfilled = list(set(self.labels.keys()) - set(self.filled))
+        unfilled = list(set(self.labels.keys()) - set(self.filled) - set(self.blocked))
         if len(unfilled) > 0:
             shuffle(unfilled)
             return unfilled[0]

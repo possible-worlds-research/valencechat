@@ -15,33 +15,10 @@ def load_verbalisations(lang):
             if '|' not in l:
                 continue
             l = l.rstrip('\n')
-            goal, utterance, counterfactual, explanation = l.split('|')
+            goal, utterance = l.split('|')
             if goal in verbalisations:
-                verbalisations[goal].append((utterance.strip(), int(counterfactual), int(explanation)))
+                verbalisations[goal].append(utterance.strip())
             else:
-                verbalisations[goal] = [(utterance.strip(), int(counterfactual), int(explanation))]
+                verbalisations[goal] = [utterance.strip()]
     return verbalisations
-
-
-def make_higher_frames(verbalisations):
-    '''
-    Build basic conceptual frames from verbalisations.
-    '''
-    higher_frames = {}
-    for typ in list(verbalisations.keys()):
-        typ = typ[1:-1] #strip <>
-        els = typ.split(':')
-        frame = els[0]
-        core = els[1]
-        if len(els) > 2:
-            attribute = els[2]
-        else:
-            attribute = None
-        if frame in higher_frames:
-            higher_frames[frame].append((core, attribute))
-        else:
-            higher_frames[frame] = [(core, attribute)]
-    return higher_frames
-
-
 
