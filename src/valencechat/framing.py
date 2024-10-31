@@ -83,18 +83,20 @@ class Frame:
             self.labels[label].append(value)
         self.filled.append(label)
 
-    def explore_from_frame(self):
+    def explore_from_frame(self, verbose=False):
         '''
         Engage in exploration from this frame. This could be by filling in some 
         non-essential slot of the current frame, or by branching out
         to some new context or belief holder.
         '''
-        print("Trying to sample non core unfilled.")
+        if verbose:
+            print("Trying to sample non core unfilled.")
         non_core = self.sample_non_core_unfilled()
         if non_core:
             return 'sampled_non_core', non_core
-        
-        print("Trying to sample new context.")
+       
+        if verbose:
+            print("Trying to sample new context.")
         context = self.pick_new_context()
         if context:
             # We assume the new frame is about the same ontological type as the parent (individual or concept)
@@ -108,7 +110,8 @@ class Frame:
             del new_frame.blocked[:]
             return 'new_context', new_frame
 
-        print("Trying to sample new belief holder")
+        if verbose:
+            print("Trying to sample new belief holder")
         new_frame = Frame(name=self.name, belief_holder=None, individual=self.individual)
         return 'new_belief_holder', new_frame
 
@@ -123,7 +126,7 @@ class Frame:
         contexts.extend(self.valence['counterfactuals'])
         contexts.extend(self.prevalence['counterfactuals'])
         shuffle(contexts)
-        print("Possible new contexts",contexts)
+        #print("Possible new contexts",contexts)
         context = f"{self.name}:{contexts[0]}"
         return context
 
