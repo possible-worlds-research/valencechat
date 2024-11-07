@@ -2,7 +2,7 @@ from os.path import join, dirname, realpath, abspath
 from pathlib import Path
 import inspect
 
-def load_verbalisations(lang):
+def load_verbalisations(lang, verbalisation_path=None):
     '''
     Convention file should be in format
     goal|bot answer.
@@ -10,7 +10,9 @@ def load_verbalisations(lang):
     verbalisations = {}
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     path = dirname(abspath(filename))
-    with open(join(path, "static", lang, "verbalisations.txt"), encoding='utf-8') as f:
+    if not verbalisation_path:
+        verbalisation_path = join(path, "static", lang, "verbalisations.txt")
+    with open(verbalisation_path, encoding='utf-8') as f:
         for l in f:
             if '|' not in l:
                 continue
