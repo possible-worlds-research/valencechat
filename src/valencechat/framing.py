@@ -29,75 +29,80 @@ class Frame:
         self.belief_holder = belief_holder
         self.name = name
         self.individual = individual
-
-        # Definition for the concept, cases where the definition might not apply,
-        # why this is a good definition.
-        self.definition = {'surface_form':'', 'explanation':'', 'counterfactuals':[]}
+        self.definition = Definition()
+        self.valence = Valence()
+        self.prevalence = Prevalence()
 
         # Instances for the concept: a list of objects of class Frame
         self.instances = []
 
-        # Valence for the concept, cases where the valence would be different,
-        # why this is a good definition.
-        self.valence = {'score':0.0, 'explanation':'', 'counterfactuals':[]}
-
-        # Prevalence for the concept, cases where the valence would be different,
-        # why this is a good definition.
-        self.prevalence = {'score':0.0, 'explanation':'', 'counterfactuals':[]}
 
         # Labels for each slot in the frame
         self.labels = {
-                'definition:surface_form': self.definition['surface_form'],
-                'definition:explanation': self.definition['explanation'],
-                'definition:counterfactuals': self.definition['counterfactuals'],
+                'definition:surface_form': self.definition.set_surface_form,
+                'definition:explanation': self.definition.set_explanation,
+                'definition:counterfactuals': self.definition.set_counterfactuals,
+                'valence:surface_form': self.valence.set_surface_form,
+                'valence:score': self.valence.set_score,
+                'valence:explanation': self.valence.set_explanation,
+                'valence:counterfactuals': self.valence.set_counterfactuals,
+                'prevalence:surface_form': self.prevalence.set_surface_form,
+                'prevalence:score': self.prevalence.set_score,
+                'prevalence:explanation': self.prevalence.set_explanation,
+                'prevalence:counterfactuals': self.prevalence.set_counterfactuals,
                 'instances': self.instances,
-                'valence:score': self.valence['score'],
-                'valence:explanation': self.valence['explanation'],
-                'valence:counterfactuals': self.valence['counterfactuals'],
-                'prevalence:score': self.prevalence['score'],
-                'prevalence:explanation': self.prevalence['explanation'],
-                'prevalence:counterfactuals': self.prevalence['counterfactuals'],
                 }
                 
 
-        # Show the variables that should be filled in the core script.
+        # Placeholder for the variables that should be filled in the core script.
         # By default, individuals do not have valence and prevalence.
         self.core_script = ['definition:surface_form', 'instances']
         if not self.individual:
-            self.core_script.extend(['valence:score', 'prevalence:score'])
+            self.core_script.extend(['valence:surface_form', 'prevalence:surface_form'])
 
-        # Show the variables that should remain unfilled in the core script.
+        # Placeholder the variables that should remain unfilled in the core script.
         # By default, individuals have most labels blocked.
+        # Floats (scores) are blocked because filled automatically given the surface form.
         self.blocked = []
+        for label,v in self.labels.items():
+            if isinstance(v,float):
+                self.blocked.append(label)
         if self.individual:
             blocked = list(set(self.labels.keys()) - set(self.core_script))
             self.blocked.extend(blocked)
 
         # Placeholder to hold the list of filled frame elements.
         self.filled = []
+        
+        # Placeholder to hold the list of filled frame elements that accept further input.
+        self.optional = []
 
+    # Add a value to a label. Mark the slot as filled if type is not list.
     def fill(self, label, value):
-        if label != 'instances' and not label.endswith('counterfactuals'):
-            self.labels[label] = value
-        else:
+        if label == 'instances':
             self.labels[label].append(value)
+            self.optional.append(label)
+        else:
+            r = self.labels[label](value)
+            if isinstance(r,list):
+                self.optional.append(label)
         self.filled.append(label)
+        self.optional = list(set(self.optional))
+        self.filled = list(set(self.filled))
 
-    def explore_from_frame(self, verbose=False):
-        '''
-        Engage in exploration from this frame. This could be by filling in some 
-        non-essential slot of the current frame, or by branching out
-        to some new context or belief holder.
-        '''
+
+    def return_sampled_non_core(self, verbose=False):
         if verbose:
-            print("Trying to sample non core unfilled.")
+            print("Trying to sample optional and non core unfilled.")
         non_core = self.sample_non_core_unfilled()
-        if non_core:
-            return 'sampled_non_core', non_core
-       
+        return 'sampled_non_core', non_core
+
+
+    def return_sampled_new_context(self, verbose=False):
+        new_frame = None
         if verbose:
             print("Trying to sample new context.")
-        context = self.pick_new_context()
+        context = self.sample_new_context()
         if context:
             # We assume the new frame is about the same ontological type as the parent (individual or concept)
             # This is perhaps a bit of a stretch...?
@@ -108,14 +113,37 @@ class Frame:
 
             # Redefine blocked list is not needed anymore, as the number of arguments will select for the right verbalisations.
             del new_frame.blocked[:]
-            return 'new_context', new_frame
+        return 'new_context', new_frame
 
+
+    def return_belief_holder(self, verbose=False):
         if verbose:
             print("Trying to sample new belief holder")
         new_frame = Frame(name=self.name, belief_holder=None, individual=self.individual)
         return 'new_belief_holder', new_frame
 
-    def pick_new_context(self):
+
+    def explore_from_frame(self, verbose=False):
+        '''
+        Engage in exploration from this frame. This could be by filling in some 
+        non-essential slot of the current frame, or by branching out
+        to some new context or belief holder.
+        '''
+
+        sampled_type, info = self.return_sampled_non_core(verbose=verbose)
+        if info:
+            return sampled_type, info
+
+        sampled_type, info = self.return_sampled_new_context(verbose=verbose)
+        if info:
+            return sampled_type, info
+
+        sampled_type, info = self.return_belief_holder(verbose=verbose)
+        if info:
+            return sampled_type, info
+
+
+    def sample_new_context(self):
         '''
         This picks a context of interest to build a new frame.
         'Context' here could refer to a particular instance, or
@@ -123,12 +151,19 @@ class Frame:
         '''
         contexts = []
         contexts.extend(self.instances)
-        contexts.extend(self.valence['counterfactuals'])
-        contexts.extend(self.prevalence['counterfactuals'])
+        contexts.extend(self.valence.attributes['counterfactuals'])
+        contexts.extend(self.prevalence.attributes['counterfactuals'])
         shuffle(contexts)
         #print("Possible new contexts",contexts)
         context = f"{self.name}:{contexts[0]}"
         return context
+
+    def sample_optional(self):
+        '''
+        Sample from frame elements that accept several values.
+        '''
+        shuffle(self.optional)
+        return self.optional[0]
 
     def sample_core_unfilled(self):
         '''
@@ -136,6 +171,7 @@ class Frame:
         currently unfilled.
         '''
         core_unfilled = list(set(self.core_script) - set(self.filled) - set(self.blocked))
+        #print("Core unfilled",core_unfilled)
         if len(core_unfilled) > 0:
             shuffle(core_unfilled)
             return core_unfilled[0]
@@ -146,7 +182,8 @@ class Frame:
         Sample from frame elements from non-core elements that are 
         currently unfilled.
         '''
-        unfilled = list(set(self.labels.keys()) - set(self.filled) - set(self.blocked))
+        unfilled = list(set(self.labels.keys()) - set(self.filled) - set(self.blocked)) + self.optional
+        #print("Non core unfilled",unfilled)
         if len(unfilled) > 0:
             shuffle(unfilled)
             return unfilled[0]
@@ -154,6 +191,62 @@ class Frame:
 
     def jsonify(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4) 
+
+
+class Definition:
+    '''
+    Definition for the concept, cases where the definition might not apply,
+    why this is a good definition.
+    '''
+    def __init__(self):
+        self.attributes = {'surface_form':'', 'explanation':'', 'counterfactuals':[]}
+    
+    def set_surface_form(self, v):
+        self.attributes['surface_form'] = v
+        return self.attributes['surface_form']
+    
+    def set_explanation(self, v):
+        self.attributes['explanation'] = v
+        return self.attributes['explanation']
+    
+    def set_counterfactuals(self, v):
+        self.attributes['counterfactuals'].append(v)
+        return self.attributes['counterfactuals']
+
+
+class Valence:
+    '''
+    Valence for the concept, corresponding score, cases where the valence 
+    would be different, why this is a good judgment.
+    '''
+    def __init__(self):
+        self.attributes = {'surface_form':'', 'score':0.0, 'explanation':'', 'counterfactuals':[]}
+    
+    def set_surface_form(self, v):
+        self.attributes['surface_form'] = v
+        return self.attributes['surface_form']
+    
+    def set_score(self, v):
+        self.attributes['score'] = v
+        return self.attributes['score']
+    
+    def set_explanation(self, v):
+        self.attributes['explanation'] = v
+        return self.attributes['explanation']
+    
+    def set_counterfactuals(self, v):
+        self.attributes['counterfactuals'].append(v)
+        return self.attributes['counterfactuals']
+
+
+class Prevalence(Valence):
+    '''
+    Prevalence for the concept, corresponding score, cases where the valence 
+    would be different, why this is a good judgment.
+    '''
+    pass
+
+
 
 class Space:
     '''
