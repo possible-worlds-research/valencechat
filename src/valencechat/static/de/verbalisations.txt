@@ -5,20 +5,20 @@
 # Defining
 <concept:definition:surface_form>| Kannst du <x> genau definieren?
 <concept:definition:surface_form>| Kannst du den Begriff <x> erklären?
-<concept:definition:explanation>| Kannst du erklären, warum du <x> so definierst?
+<concept:definition:explanation>| Kannst du erklären, warum du <x> so definierst, wie du es machst?
 <concept:definition:counterfactuals>| Gäbe es andere Definitionen von <x>?
 
 <individual:definition:surface_form>| Wer ist denn <x>?
 <individual:definition:surface_form>| Sag mir, wer <x> ist.
 
 # Valence
-<concept:valence:score>| Wie gut für die Welt ist <x>?
-<individual:valence:score>| Wie gut findet <x> <y>?
+<concept:valence:surface_form>| Wie gut für die Welt ist <x>?
+<individual:valence:surface_form>| Wie gut findet <x> <y>?
 
 # Prevalence
-<concept:prevalence:score>| Wie oft trifft man <x> in der Welt?
-<concept:prevalence:score>| Wie oft passiert <x>?
-<individual:prevalence:score>| Wie oft findet man <x> mit <y>?
+<concept:prevalence:surface_form>| Wie oft trifft man <x> in der Welt?
+<concept:prevalence:surface_form>| Wie oft passiert <x>?
+<individual:prevalence:surface_form>| Wie oft findet man <x> mit <y>?
 
 # Instantiation
 <concept:instances>| Gib mir ein Beispiel von <x>.
